@@ -16,7 +16,7 @@ function useColombiaClock() {
   return `${day} · ${hour}`
 }
 
-export function TopBar() {
+export function TopBar({ nodeCount }: { nodeCount: number }) {
   const time = useColombiaClock()
   return (
     <header className="topbar">
@@ -24,8 +24,14 @@ export function TopBar() {
         <div className="brand-mark"><Layers3 size={16} /></div>
         <span>JARVIS</span>
       </div>
-      <div className="status-pill"><i className="live-dot" /> SISTEMA ONLINE</div>
-      <div className="clock" aria-label="Hora Colombia"><small>COLOMBIA (COT)</small><strong>{time}</strong></div>
+      <div className="topbar-title">
+        <span className="eyebrow"><span className="live-dot" /> SPATIAL COMMAND · {nodeCount} NODOS</span>
+        <h1>PROJECT FIELD</h1>
+      </div>
+      <div className="topbar-side">
+        <div className="status-pill"><i className="live-dot" /> ONLINE</div>
+        <div className="clock" aria-label="Hora Colombia"><small>COLOMBIA (COT)</small><strong>{time}</strong></div>
+      </div>
     </header>
   )
 }

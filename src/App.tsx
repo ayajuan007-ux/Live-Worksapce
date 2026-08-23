@@ -191,13 +191,7 @@ export default function App() {
       </div>
 
       <div className="ui-overlay">
-        <TopBar />
-
-        <section className="hero">
-          <span className="eyebrow"><span className="live-dot" /> SPATIAL COMMAND · {visible.length} NODOS</span>
-          <h1>PROJECT FIELD</h1>
-          <p>Control visual de proyectos, documentos y fases en el campo.</p>
-        </section>
+        <TopBar nodeCount={visible.length} />
 
         <button className={`dash-tab ${dashboardOpen ? 'shifted' : ''}`} onClick={() => setDashboardOpen((value) => !value)} aria-label="Alternar dashboard">
           <ArrowRight size={16} className={dashboardOpen ? 'flip' : ''} />

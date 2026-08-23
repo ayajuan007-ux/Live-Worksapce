@@ -100,9 +100,9 @@ export function Node({ project, selected, onSelect, onMove, onDragState, onDelet
     onMove([position.x, position.y, position.z])
   }
 
-  const anchorRight: [number, number, number] = [2.35, 0.55, -0.05]
-  const anchorLeft: [number, number, number] = [-2.35, 0.75, -0.05]
-  const anchorBottom: [number, number, number] = [0, -1.95, 0.1]
+  const anchorRight: [number, number, number] = [2.7, 0.95, -0.05]
+  const anchorLeft: [number, number, number] = [-2.7, 0.95, -0.05]
+  const anchorTop: [number, number, number] = [0.1, 2.15, 0.05]
 
   const statusChipClass =
     project.status === 'Completado' ? 'chip chip-done' : project.status === 'En curso' ? 'chip chip-live' : 'chip chip-plan'
@@ -142,9 +142,9 @@ export function Node({ project, selected, onSelect, onMove, onDragState, onDelet
 
         {open && (
           <>
-            <Line points={[[0.3, 0.25, 0], anchorRight]} color={project.color} lineWidth={1} transparent opacity={0.5} />
-            <Line points={[[-0.3, 0.25, 0], anchorLeft]} color={project.color} lineWidth={1} transparent opacity={0.5} />
-            <Line points={[[0, -0.32, 0], anchorBottom]} color={project.color} lineWidth={1} transparent opacity={0.5} />
+            <Line points={[[0.3, 0.3, 0], anchorRight]} color={project.color} lineWidth={1} transparent opacity={0.5} />
+            <Line points={[[-0.3, 0.3, 0], anchorLeft]} color={project.color} lineWidth={1} transparent opacity={0.5} />
+            <Line points={[[0.05, 0.34, 0], anchorTop]} color={project.color} lineWidth={1} transparent opacity={0.5} />
 
             <Html transform distanceFactor={6.4} position={anchorRight} zIndexRange={[8, 0]}>
               <div className="intel-panel" style={{ '--c': project.color } as CSSProperties}>
@@ -208,7 +208,7 @@ export function Node({ project, selected, onSelect, onMove, onDragState, onDelet
               </div>
             </Html>
 
-            <Html transform distanceFactor={6.4} position={anchorBottom} zIndexRange={[8, 0]}>
+            <Html transform distanceFactor={6.4} position={anchorTop} zIndexRange={[8, 0]}>
               <div className="intel-panel wide-panel" style={{ '--c': project.color } as CSSProperties}>
                 <header><span className="intel-dot" />FASES · SEGUIMIENTOS</header>
                 <div className="intel-body">

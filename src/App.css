@@ -38,12 +38,12 @@
   top: 0;
   left: 0;
   right: 0;
-  height: 58px;
+  height: 92px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 20px;
-  background: linear-gradient(180deg, rgba(2, 4, 3, 0.92), rgba(2, 4, 3, 0));
+  background: linear-gradient(180deg, rgba(2, 4, 3, 0.94) 30%, rgba(2, 4, 3, 0));
   z-index: 30;
 }
 
@@ -57,6 +57,29 @@
   background: linear-gradient(135deg, var(--lime), var(--mint));
   box-shadow: 0 0 18px rgba(98, 245, 208, 0.45);
 }
+
+.topbar-title {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  pointer-events: none;
+}
+
+.topbar-title h1 {
+  margin: 2px 0 0;
+  font-size: clamp(17px, 2.3vw, 25px);
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  background: linear-gradient(90deg, var(--lime), var(--mint), var(--blue));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 14px rgba(98, 245, 208, 0.35));
+  white-space: nowrap;
+}
+
+.topbar-side { display: flex; align-items: center; gap: 14px; }
 
 .status-pill {
   display: inline-flex; align-items: center; gap: 8px;
@@ -80,31 +103,7 @@
 .clock small { display: block; font-family: var(--mono); font-size: 9px; letter-spacing: 0.3em; color: var(--muted); }
 .clock strong { font-family: var(--mono); font-size: 15px; letter-spacing: 0.12em; color: var(--mint); text-shadow: 0 0 14px rgba(98, 245, 208, 0.5); }
 
-/* ============ HERO (TÍTULOS CENTRADOS) ============ */
-
-.hero {
-  position: absolute;
-  top: 66px;
-  left: 50%;
-  transform: translateX(-50%);
-  text-align: center;
-  pointer-events: none;
-  z-index: 20;
-}
-
-.hero h1 {
-  margin: 6px 0 4px;
-  font-size: clamp(26px, 4vw, 42px);
-  font-weight: 800;
-  letter-spacing: 0.16em;
-  background: linear-gradient(90deg, var(--lime), var(--mint), var(--blue));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  filter: drop-shadow(0 0 18px rgba(98, 245, 208, 0.35));
-}
-
-.hero p { margin: 0; font-size: 12.5px; color: var(--muted); letter-spacing: 0.06em; }
+/* ============ TÍTULO EN TOPBAR (EL CAMPO QUEDA LIBRE) ============ */
 
 /* ============ BOTONES ============ */
 
@@ -189,7 +188,7 @@
 
 .selection-strip {
   position: absolute;
-  top: 64px; right: 20px;
+  top: 100px; right: 20px;
   display: flex; align-items: center; gap: 9px;
   padding: 8px 14px;
   border-radius: 999px;
@@ -224,7 +223,8 @@
 
 .dashboard {
   position: absolute;
-  top: 68px; bottom: 100px; left: 8px;
+  top: 102px;
+  bottom: 100px; left: 8px;
   width: 330px;
   display: flex; flex-direction: column;
   border-radius: 18px;
@@ -567,7 +567,9 @@
 @media (max-width: 720px) {
   .dashboard { width: min(300px, calc(100vw - 60px)); }
   .dash-tab.shifted { left: min(300px, calc(100vw - 60px)); }
-  .hero h1 { font-size: 24px; }
+  .topbar-title .eyebrow { display: none; }
+  .topbar-title h1 { font-size: 15px; letter-spacing: 0.14em; }
+  .topbar-side .status-pill { display: none; }
   .dock { flex-wrap: wrap; justify-content: center; width: calc(100vw - 32px); }
   .hint-bar { display: none; }
   .form-grid { grid-template-columns: 1fr; }
