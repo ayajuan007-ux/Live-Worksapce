@@ -1,33 +1,36 @@
-import type { Project } from '../types'
-import { seedProjects } from '../data/seed'
+import type { Connection, Project, Workspace } from '../types'
 
-const KEY = 'jarvis-field-v1'
+const KEY = 'live-workspace-v2'
 
-export function loadProjects(): Project[] {
+export function loadWorkspace(): Workspace {
   try {
     const raw = localStorage.getItem(KEY)
-    if (!raw) return seedProjects
+    if (!raw) return { projects: [], connections: [] }
     const parsed: unknown = JSON.parse(raw)
-    if (!Array.isArray(parsed)) return seedProjects
-    const clean = parsed.filter((item): item is Project => {
+    const obj = parsed as Partial<Workspace>
+    if (!Array.isArray(obj?.projects)) return { projects: [], connections: [] }
+    const projects = obj.projects.filter((item): item is Project => {
       const p = item as Project
       return typeof p?.id === 'string' && typeof p?.name === 'string' && Array.isArray(p?.phases)
     })
-    return clean.length > 0 ? clean : seedProjects
+    const connections = Array.isArray(obj.connections)
+      ? obj.connections.filter((c): c is Connection => typeof c?.a === 'string' && typeof c?.b === 'string')
+      : []
+    return { projects, connections }
   } catch {
-    return seedProjects
+    return { projects: [], connections: [] }
   }
 }
 
-export function saveProjects(projects: Project[]): void {
+export function saveWorkspace(workspace: Workspace): void {
   try {
-    localStorage.setItem(KEY, JSON.stringify(projects))
+    localStorage.setItem(KEY, JSON.stringify(workspace))
   } catch {
     /* almacenamiento no disponible */
   }
 }
 
-export function clearStorage(): void {
+export function clearWorkspace(): void {
   try {
     localStorage.removeItem(KEY)
   } catch {

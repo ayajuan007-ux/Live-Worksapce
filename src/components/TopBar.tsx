@@ -26,7 +26,7 @@ export function TopBar({ nodeCount }: { nodeCount: number }) {
       </div>
       <div className="topbar-title">
         <span className="eyebrow"><span className="live-dot" /> SPATIAL COMMAND · {nodeCount} NODOS</span>
-        <h1>PROJECT FIELD</h1>
+        <h1>LIVE WORKSPACE</h1>
       </div>
       <div className="topbar-side">
         <div className="status-pill"><i className="live-dot" /> ONLINE</div>
