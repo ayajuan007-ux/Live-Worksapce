@@ -1,59 +1,241 @@
-import { Canvas, useFrame } from '@react-three/fiber'
-import { DragControls, OrbitControls, Html } from '@react-three/drei'
-import { useEffect, useRef, useState } from 'react'
-import { Activity, ArrowLeft, ArrowRight, CalendarDays, Check, FilePlus2, Layers3, LocateFixed, Menu, Plus, Search, Sparkles, Timer, Upload, UserRound, X, Trash2, Shuffle } from 'lucide-react'
-import * as THREE from 'three'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { ArrowLeft, ArrowRight, LocateFixed, Menu, Plus, Search } from 'lucide-react'
+import type { Project, Status } from './types'
+import { NODE_COLORS, STATUSES } from './types'
+import { seedProjects } from './data/seed'
+import { clearStorage, loadProjects, saveProjects } from './lib/storage'
+import { Scene, type FocusRequest } from './three/Scene'
+import { TopBar } from './components/TopBar'
+import { Dashboard } from './components/Dashboard'
+import { CreateProjectModal } from './components/CreateProjectModal'
 import './App.css'
 
-type Status = 'En curso' | 'Planificacion' | 'Completado'
-type Phase = { name: string; owner: string; progress: number; status: 'Activo' | 'Proximo' | 'Listo'; date: string }
-type Project = { id: string; name: string; code: string; status: Status; progress: number; delivery: string; position: [number, number, number]; color: string; company: string; niche: string; value: string; phases: Phase[]; document?: string }
+const FOCUS_NEAR = 4.4
+const FOCUS_HOME = 8.5
 
-const colors = ['#d8ff63', '#ff8164', '#7eb7ff', '#bc8cff', '#ffd166', '#62f5d0']
-const projectsSeed: Project[] = [
-  { id: 'atlas', name: 'Atlas Platform', code: 'AT-204', status: 'En curso', progress: 68, delivery: '18 OCT 2026', position: [-2.8, .45, 0], color: '#d8ff63', company: 'Atlas Labs', niche: 'SaaS / Product', value: '$48.000', phases: [{ name: 'Discovery & strategy', owner: 'Mara Klein', progress: 100, status: 'Listo', date: '04 AGO' }, { name: 'Core experience', owner: 'Studio North', progress: 82, status: 'Activo', date: '18 SEP' }, { name: 'Beta release', owner: 'Product team', progress: 24, status: 'Proximo', date: '18 OCT' }] },
-  { id: 'lumen', name: 'Lumen Commerce', code: 'LM-118', status: 'En curso', progress: 42, delivery: '06 NOV 2026', position: [.25, 1.15, -.65], color: '#ff8164', company: 'Lumen Retail', niche: 'Commerce', value: '$32.500', phases: [{ name: 'Research sprint', owner: 'Insight lab', progress: 100, status: 'Listo', date: '22 JUL' }, { name: 'Service architecture', owner: 'Lumen squad', progress: 54, status: 'Activo', date: '16 SEP' }, { name: 'Pilot stores', owner: 'Retail ops', progress: 0, status: 'Proximo', date: '06 NOV' }] },
-  { id: 'terra', name: 'Terra Operations', code: 'TR-087', status: 'Planificacion', progress: 14, delivery: '12 DIC 2026', position: [2.85, -.15, .35], color: '#7eb7ff', company: 'Terra Group', niche: 'Operations', value: '$21.000', phases: [{ name: 'Brief alignment', owner: 'Operations', progress: 42, status: 'Activo', date: '30 AGO' }, { name: 'System mapping', owner: 'Terra team', progress: 0, status: 'Proximo', date: '20 SEP' }] },
-  { id: 'nova', name: 'Nova Identity', code: 'NV-331', status: 'Completado', progress: 100, delivery: '02 JUL 2026', position: [.8, -1.25, .55], color: '#bc8cff', company: 'Nova Studio', niche: 'Brand / Identity', value: '$16.800', phases: [{ name: 'Visual language', owner: 'Brand studio', progress: 100, status: 'Listo', date: '02 MAY' }, { name: 'Launch', owner: 'Comms', progress: 100, status: 'Listo', date: '02 JUL' }] },
-]
-
-function Node({ project, selected, onSelect, onMove, onDragState }: { project: Project; selected: boolean; onSelect: () => void; onMove: (position: [number, number, number]) => void; onDragState: (dragging: boolean) => void }) {
-  const ref = useRef<THREE.Group>(null)
-  const [opening, setOpening] = useState(false)
-  useEffect(() => { if (!selected) return; setOpening(true); const timer = window.setTimeout(() => setOpening(false), 600); return () => window.clearTimeout(timer) }, [selected])
-  useFrame(({ clock }) => { if (ref.current) ref.current.position.y = project.position[1] + Math.sin(clock.elapsedTime + project.position[0]) * .035 })
-  const handleDrag = (localMatrix: THREE.Matrix4) => { const position = new THREE.Vector3(); localMatrix.decompose(position, new THREE.Quaternion(), new THREE.Vector3()); onMove([position.x, position.y, position.z]) }
-  return <DragControls onDragStart={() => onDragState(true)} onDrag={handleDrag} onDragEnd={() => onDragState(false)} autoTransform><group ref={ref} position={project.position} onClick={(event) => { event.stopPropagation(); onSelect() }}><mesh scale={selected ? (opening ? 1.5 : 1.2) : 1}><icosahedronGeometry args={[.34, 1]} /><meshStandardMaterial color={project.color} emissive={project.color} emissiveIntensity={selected ? .55 : .12} metalness={.3} roughness={.3} /></mesh><mesh scale={selected ? 1.7 : 1.35}><ringGeometry args={[.39, .405, 32]} /><meshBasicMaterial color={project.color} transparent opacity={selected ? .9 : .25} side={THREE.DoubleSide} /></mesh><Html center position={[0, -.62, 0]} distanceFactor={5}><div className="node-label"><strong>{project.name}</strong><small>{project.progress}% / {project.code}</small></div></Html>{selected && <Html position={[.65, .8, 0]} transform distanceFactor={5}><div className="data-card data-card-visible"><span>PROJECT INTEL</span><strong>{project.company}</strong><small>{project.niche} · {project.value}</small><small><CalendarDays size={11} /> {project.delivery}</small></div></Html>}{selected && project.phases.map((phase, index) => <mesh key={phase.name} position={[Math.cos(index * 2.1) * .9, Math.sin(index * 2.1) * .4, .1]}><sphereGeometry args={[.07, 12, 12]} /><meshBasicMaterial color={project.color} /></mesh>)}</group></DragControls>
-}
-
-function Scene({ projects, selectedId, onSelect, onMove, resetKey }: { projects: Project[]; selectedId: string; onSelect: (id: string) => void; onMove: (id: string, position: [number, number, number]) => void; resetKey: number }) {
-  const [dragging, setDragging] = useState(false)
-  return <Canvas key={resetKey} camera={{ position: [0, 1.2, 7.4], fov: 43 }} onPointerMissed={() => onSelect('')}><color attach="background" args={['#020403']} /><ambientLight intensity={1.4} /><directionalLight position={[3, 4, 5]} intensity={2} /><pointLight position={[-4, 1, 2]} intensity={18} distance={8} color="#d8ff63" /><gridHelper args={[30, 60, '#29352e', '#0e1711']} position={[0, -1.75, 0]} />{projects.map((project) => <Node key={project.id} project={project} selected={project.id === selectedId} onSelect={() => onSelect(project.id)} onMove={(position) => onMove(project.id, position)} onDragState={setDragging} />)}<OrbitControls enabled={!dragging} enablePan screenSpacePanning panSpeed={.9} minDistance={.4} maxDistance={80} /></Canvas>
-}
-
-function App() {
-  const [projects, setProjects] = useState(projectsSeed)
-  const [selectedId, setSelectedId] = useState('atlas')
-  const [dashboard, setDashboard] = useState(false)
-  const [modal, setModal] = useState(false)
-  const [tab, setTab] = useState<'stats' | 'profile' | 'follow'>('stats')
-  const [name, setName] = useState('')
-  const [document, setDocument] = useState('')
+export default function App() {
+  const [projects, setProjects] = useState<Project[]>(() => loadProjects())
+  const [selectedId, setSelectedId] = useState('')
+  const [dashboardOpen, setDashboardOpen] = useState(false)
+  const [modalOpen, setModalOpen] = useState(false)
   const [search, setSearch] = useState('')
-  const [resetKey, setResetKey] = useState(0)
-  const [history, setHistory] = useState(['atlas'])
-  const [historyIndex, setHistoryIndex] = useState(0)
-  const [now, setNow] = useState(new Date())
-  useEffect(() => { const timer = window.setInterval(() => setNow(new Date()), 1000); return () => window.clearInterval(timer) }, [])
-  const selected = projects.find((item) => item.id === selectedId) ?? projects[0]
-  const visible = projects.filter((item) => item.name.toLowerCase().includes(search.toLowerCase()))
-  const select = (id: string) => { setSelectedId(id); if (id && id !== history[historyIndex]) { const next = [...history.slice(0, historyIndex + 1), id]; setHistory(next); setHistoryIndex(next.length - 1) } }
-  const move = (id: string, position: [number, number, number]) => setProjects((items) => items.map((item) => item.id === id ? { ...item, position } : item))
-  const remove = () => { if (projects.length < 2) return; const next = projects.filter((item) => item.id !== selectedId); setProjects(next); select(next[0].id) }
-  const randomize = () => setProjects((items) => items.map((item) => item.id === selectedId ? { ...item, color: colors[Math.floor(Math.random() * colors.length)] } : item))
-  const create = (event: React.FormEvent) => { event.preventDefault(); if (!name.trim()) return; const project: Project = { id: `node-${Date.now()}`, name, code: 'NEW-001', status: 'Planificacion', progress: 0, delivery: 'POR DEFINIR', position: [(Math.random() - .5) * 6, (Math.random() - .5) * 3, (Math.random() - .5)], color: colors[Math.floor(Math.random() * colors.length)], company: 'Nuevo proyecto', niche: 'Sin clasificar', value: 'POR DEFINIR', document, phases: [{ name: 'Lectura documental', owner: 'JARVIS', progress: 0, status: 'Activo', date: 'AHORA' }] }; setProjects((items) => [...items, project]); select(project.id); setModal(false); setName(''); setDocument('') }
-  const time = new Intl.DateTimeFormat('es-CO', { timeZone: 'America/Bogota', weekday: 'short', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).format(now)
-  return <main className="app-shell" onMouseMove={(event) => { if (event.clientX < 30) setDashboard(true) }}><header className="topbar"><div className="brand"><div className="brand-mark"><Layers3 size={17} /></div><span>JARVIS / <strong>PROJECT FIELD</strong></span></div><div className="topbar-center"><span className="live-dot" /> SISTEMA ONLINE</div><div className="clock"><span>COLOMBIA / SA</span><strong>{time}</strong></div></header><div className="control-strip"><div><span className="eyebrow"><Sparkles size={13} /> SPATIAL COMMAND / {projects.length} NODES</span><h1>Project field</h1><p>Control visual de proyectos, documentos y fases.</p></div><div className="controls"><button className="control-button primary" onClick={() => setModal(true)}><Plus size={15} /> Nuevo proyecto</button><button className="control-button" onClick={() => setDashboard((value) => !value)}><Menu size={15} /> Dashboard</button></div></div><section className="workspace" onMouseLeave={() => setDashboard(false)}><div className="scene-frame"><div className="scene-label top-left">CAMPO 3D / X-Y POSITIVO Y NEGATIVO</div><div className="scene-label top-right">ARRASTRA NODOS · RUEDA ZOOM INFINITO</div><Scene projects={visible} selectedId={selectedId} onSelect={select} onMove={move} resetKey={resetKey} /><div className="scene-label bottom-left">NODOS INDEPENDIENTES / FASES SUSPENDIDAS</div><div className="scene-actions"><button onClick={() => setResetKey((value) => value + 1)}><LocateFixed size={14} /> Centrar</button><button onClick={() => { const index = Math.max(0, historyIndex - 1); setHistoryIndex(index); setSelectedId(history[index]) }} disabled={historyIndex === 0}><ArrowLeft size={14} /></button><button onClick={() => { const index = Math.min(history.length - 1, historyIndex + 1); setHistoryIndex(index); setSelectedId(history[index]) }} disabled={historyIndex === history.length - 1}><ArrowRight size={14} /></button></div></div>{dashboard && <aside className="dashboard dashboard-open" onMouseEnter={() => setDashboard(true)}><div className="dashboard-head"><div><span className="panel-kicker">COMMAND DASHBOARD</span><h2>{selected.name}</h2></div><button className="close-button" onClick={() => setDashboard(false)}><X size={17} /></button></div><nav className="dashboard-tabs"><button className={tab === 'stats' ? 'active' : ''} onClick={() => setTab('stats')}><Activity size={14} /> Estadisticas</button><button className={tab === 'profile' ? 'active' : ''} onClick={() => setTab('profile')}><UserRound size={14} /> Perfil</button><button className={tab === 'follow' ? 'active' : ''} onClick={() => setTab('follow')}><Timer size={14} /> Seguimientos</button></nav>{tab === 'stats' && <div className="tab-content"><div className="stat-grid"><div><span>NODOS</span><strong>{projects.length}</strong></div><div><span>EN CURSO</span><strong>{projects.filter((item) => item.status === 'En curso').length}</strong></div><div><span>GLOBAL</span><strong>{Math.round(projects.reduce((sum, item) => sum + item.progress, 0) / projects.length)}%</strong></div></div>{selected.phases.map((phase, index) => <div className="phase-row" key={phase.name}><div className="phase-index" style={{ color: selected.color }}>{`0${index + 1}`}</div><div className="phase-main"><div className="phase-name"><span>{phase.name}</span><span className="phase-status"><Check size={11} /> {phase.status}</span></div><div className="phase-meta"><span>{phase.owner}</span><span>{phase.progress}% / {phase.date}</span></div></div></div>)}</div>}{tab === 'profile' && <div className="tab-content profile"><UserRound size={28} /><h3>{selected.company}</h3><p>{selected.niche}</p><div className="profile-line"><span>Valor</span><strong>{selected.value}</strong></div><div className="profile-line"><span>Documento</span><strong>{selected.document ?? 'Sin documento'}</strong></div></div>}{tab === 'follow' && <div className="tab-content profile"><Timer size={24} /><h3>Proximo hito</h3><p>{selected.phases.find((phase) => phase.status !== 'Listo')?.name ?? 'Proyecto finalizado'}</p><div className="profile-line"><span>Entrega</span><strong>{selected.delivery}</strong></div></div>}<div className="dashboard-footer"><label className="search-box"><Search size={15} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar nodos" /></label><div className="node-tools"><button onClick={randomize}><Shuffle size={14} /> Color random</button><button onClick={remove}><Trash2 size={14} /> Eliminar</button></div></div></aside>}</section>{modal && <div className="modal-backdrop" onMouseDown={(event) => event.target === event.currentTarget && setModal(false)}><form className="project-modal" onSubmit={create}><div className="modal-head"><div><span className="panel-kicker">NEW NODE / DOCUMENT SCAN</span><h2>Crear proyecto</h2></div><button type="button" className="close-button" onClick={() => setModal(false)}><X size={17} /></button></div><label>Nombre del proyecto<input autoFocus value={name} onChange={(event) => setName(event.target.value)} placeholder="Ej. Proyecto Aurora" /></label><label className="dropzone"><Upload size={25} /><strong>{document || 'Sube contrato, PDF o proyecto'}</strong><small>Sin documento, JARVIS asigna un color aleatorio</small><input type="file" accept=".pdf,.doc,.docx,.txt" onChange={(event) => setDocument(event.target.files?.[0]?.name ?? '')} /></label><button className="control-button primary create-button" type="submit"><FilePlus2 size={15} /> Crear nodo</button></form></div>}</main>
-}
+  const [history, setHistory] = useState<string[]>([])
+  const [historyIndex, setHistoryIndex] = useState(-1)
+  const [focusToken, setFocusToken] = useState(0)
+  const [focusPos, setFocusPos] = useState<[number, number, number]>([0, 0.3, 0])
 
-export default App
+  useEffect(() => saveProjects(projects), [projects])
+
+  const activeId = projects.some((project) => project.id === selectedId) ? selectedId : ''
+  const selected = projects.find((project) => project.id === activeId)
+
+  const visible = useMemo(() => {
+    const query = search.trim().toLowerCase()
+    if (!query) return projects
+    return projects.filter(
+      (project) =>
+        project.name.toLowerCase().includes(query) ||
+        project.code.toLowerCase().includes(query) ||
+        (project.company ?? '').toLowerCase().includes(query),
+    )
+  }, [projects, search])
+
+  const focus: FocusRequest = useMemo(() => ({ position: focusPos, distance: FOCUS_NEAR, token: focusToken }), [focusPos, focusToken])
+
+  const requestFocus = useCallback((position: [number, number, number], distance = FOCUS_NEAR) => {
+    setFocusPos(position)
+    setFocusToken((token) => token + 1)
+    void distance
+  }, [])
+
+  const select = useCallback(
+    (id: string) => {
+      setSelectedId(id)
+      if (!id) return
+      setHistory((prev) => {
+        const trimmed = prev.slice(0, historyIndex + 1)
+        if (trimmed[trimmed.length - 1] === id) return trimmed
+        const next = [...trimmed, id]
+        setHistoryIndex(next.length - 1)
+        return next
+      })
+      const target = projects.find((project) => project.id === id)
+      if (target) requestFocus(target.position)
+    },
+    [historyIndex, projects, requestFocus],
+  )
+
+  const goBack = useCallback(() => {
+    if (historyIndex <= 0) return
+    const index = historyIndex - 1
+    setHistoryIndex(index)
+    setSelectedId(history[index])
+    const target = projects.find((project) => project.id === history[index])
+    if (target) requestFocus(target.position)
+  }, [history, historyIndex, projects, requestFocus])
+
+  const goForward = useCallback(() => {
+    if (historyIndex >= history.length - 1) return
+    const index = historyIndex + 1
+    setHistoryIndex(index)
+    setSelectedId(history[index])
+    const target = projects.find((project) => project.id === history[index])
+    if (target) requestFocus(target.position)
+  }, [history, historyIndex, projects, requestFocus])
+
+  const centerView = () => requestFocus([0, 0.2, 0], FOCUS_HOME)
+
+  const move = useCallback((id: string, position: [number, number, number]) => {
+    setProjects((items) => items.map((item) => (item.id === id ? { ...item, position } : item)))
+  }, [])
+
+  const removeProject = useCallback((id: string) => {
+    setProjects((items) => items.filter((item) => item.id !== id))
+  }, [])
+
+  const cycleColor = useCallback((id: string) => {
+    setProjects((items) =>
+      items.map((item) => {
+        if (item.id !== id) return item
+        const index = NODE_COLORS.indexOf(item.color as (typeof NODE_COLORS)[number])
+        const color = NODE_COLORS[(index + 1) % NODE_COLORS.length]
+        return { ...item, color }
+      }),
+    )
+  }, [])
+
+  const adjustProgress = useCallback((id: string, delta: number) => {
+    setProjects((items) =>
+      items.map((item) =>
+        item.id === id ? { ...item, progress: Math.max(0, Math.min(100, item.progress + delta)) } : item,
+      ),
+    )
+  }, [])
+
+  const cycleStatus = useCallback((id: string) => {
+    setProjects((items) =>
+      items.map((item) => {
+        if (item.id !== id) return item
+        const index = STATUSES.indexOf(item.status)
+        const status = STATUSES[(index + 1) % STATUSES.length] as Status
+        return { ...item, status, progress: status === 'Completado' ? 100 : item.progress }
+      }),
+    )
+  }, [])
+
+  const createProject = (project: Project) => {
+    setProjects((items) => [...items, project])
+    setModalOpen(false)
+    select(project.id)
+  }
+
+  const resetData = () => {
+    clearStorage()
+    setProjects(seedProjects)
+    select(seedProjects[0].id)
+  }
+
+  const exportData = () => {
+    const blob = new Blob([JSON.stringify(projects, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const anchor = document.createElement('a')
+    anchor.href = url
+    anchor.download = 'jarvis-field-respaldo.json'
+    anchor.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const importData = (file: File) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      try {
+        const parsed: unknown = JSON.parse(String(reader.result))
+        if (!Array.isArray(parsed)) return
+        const valid = parsed.filter((item): item is Project => {
+          const p = item as Project
+          return typeof p?.id === 'string' && typeof p?.name === 'string' && Array.isArray(p?.phases)
+        })
+        if (valid.length > 0) setProjects(valid)
+      } catch {
+        /* archivo inválido: se ignora */
+      }
+    }
+    reader.readAsText(file)
+  }
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if ((event.target as HTMLElement)?.tagName === 'INPUT') return
+      if (event.key === 'Escape') setSelectedId('')
+      if (event.key === '[') goBack()
+      if (event.key === ']') goForward()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [goBack, goForward])
+
+  return (
+    <main className="app-root">
+      <div className="scene-layer">
+        <Scene
+          projects={visible}
+          selectedId={activeId}
+          onSelect={select}
+          onMove={move}
+          onDelete={removeProject}
+          onCycleColor={cycleColor}
+          onAdjustProgress={adjustProgress}
+          onCycleStatus={cycleStatus}
+          focus={focus}
+        />
+      </div>
+
+      <div className="ui-overlay">
+        <TopBar />
+
+        <section className="hero">
+          <span className="eyebrow"><span className="live-dot" /> SPATIAL COMMAND · {visible.length} NODOS</span>
+          <h1>PROJECT FIELD</h1>
+          <p>Control visual de proyectos, documentos y fases en el campo.</p>
+        </section>
+
+        <button className={`dash-tab ${dashboardOpen ? 'shifted' : ''}`} onClick={() => setDashboardOpen((value) => !value)} aria-label="Alternar dashboard">
+          <ArrowRight size={16} className={dashboardOpen ? 'flip' : ''} />
+        </button>
+
+        <Dashboard
+          open={dashboardOpen}
+          onClose={() => setDashboardOpen(false)}
+          projects={projects}
+          selectedId={activeId}
+          onSelect={select}
+          onResetData={resetData}
+          onExport={exportData}
+          onImport={importData}
+        />
+
+        <div className="dock">
+          <label className="dock-search">
+            <Search size={14} />
+            <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar nodo…" />
+          </label>
+          <button className="control-button primary" onClick={() => setModalOpen(true)}><Plus size={15} /> Nuevo</button>
+          <button className="control-button" onClick={() => setDashboardOpen(true)}><Menu size={15} /> Dashboard</button>
+          <button className="control-button icon-only" onClick={centerView} aria-label="Centrar cámara"><LocateFixed size={15} /></button>
+          <button className="control-button icon-only" onClick={goBack} disabled={historyIndex <= 0} aria-label="Ir atrás"><ArrowLeft size={15} /></button>
+          <button className="control-button icon-only" onClick={goForward} disabled={historyIndex >= history.length - 1} aria-label="Ir adelante"><ArrowRight size={15} /></button>
+        </div>
+
+        <footer className="hint-bar">ARRASTRA NODOS · RUEDA = ZOOM INFINITO · CLIC FUERA CIERRA LA FICHA · ESC LIMPIA SELECCIÓN</footer>
+      </div>
+
+      {modalOpen && <CreateProjectModal onClose={() => setModalOpen(false)} onCreate={createProject} />}
+
+      {selected && (
+        <div className="selection-strip" style={{ '--c': selected.color } as React.CSSProperties}>
+          <i /> {selected.name} · {selected.code}
+        </div>
+      )}
+    </main>
+  )
+}

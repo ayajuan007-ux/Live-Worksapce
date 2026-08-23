@@ -1,78 +1,6 @@
-# React + TypeScript + Vite
+# JARVIS · Project Field
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
-
-Currently, two official plugins are available:
-
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
-```
-
-Interfaz futurista para gestionar proyectos en un campo 3D interactivo.
+Interfaz futurista tipo Jarvis para gestionar proyectos en un campo 3D interactivo.
 
 ## Desarrollo local
 
@@ -83,12 +11,17 @@ npm run dev
 
 ## Funciones actuales
 
-- Campo 3D con paneo y zoom.
-- Nodos de proyectos independientes y movibles.
-- Dashboard lateral con estadisticas, perfil y seguimientos.
-- Creacion de proyectos con carga de documentos.
-- Eliminacion y cambio de color de nodos.
-- Reloj configurado para Colombia.
+- Interfaz DOM completamente separada del espacio 3D.
+- Nodos de proyecto independientes y arrastrables (sin conexiones entre sí).
+- Animación de explosión al abrir un nodo: libera paneles suspendidos conectados con toda la ficha (resumen, valor, empresa, nicho, contacto, fechas, acuerdos, fases, seguimientos).
+- Fichas adaptadas: proyectos empresariales y personales/estudio (ideas + fases).
+- Creación de proyectos con subida de documentos (contratos, PDFs…) y escaneo real del texto (pdf.js) que autocompleta la ficha.
+- Dashboard izquierdo retraíble con pestañas separadas: estadísticas, perfil y seguimientos.
+- Zoom infinito con la rueda del mouse sobre cualquier punto del campo.
+- Reloj superior derecho actualizado a hora colombiana (día/hora).
+- Botones Go Back / Go Forward con historial de nodos visitados.
+- Edición rápida desde la ficha: progreso (+/-), estado, color y eliminación.
+- Persistencia automática en el navegador + exportar/importar respaldo JSON.
 
 ## Validacion
 
