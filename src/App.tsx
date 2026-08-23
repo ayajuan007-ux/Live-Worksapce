@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ArrowLeft, ArrowRight, Link2, LocateFixed, Menu, Plus, Search, Unlink2 } from 'lucide-react'
+import { SpeedInsights } from '@vercel/speed-insights/react'
 import type { Connection, PanelKey, Project, Status, Vec3 } from './types'
 import { NODE_COLORS, STATUSES } from './types'
 import { clearWorkspace, loadWorkspace, saveWorkspace } from './lib/storage'
@@ -307,6 +308,8 @@ export default function App() {
       {modalOpen && <CreateProjectModal onClose={() => setModalOpen(false)} onCreate={createProject} />}
 
       {detailProject && <DetailModeCanvas project={detailProject} {...detailProps} />}
+
+      <SpeedInsights />
     </main>
   )
 }
